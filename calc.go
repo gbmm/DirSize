@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 var SIZE int64
@@ -20,7 +21,7 @@ func calcFileSize(path string) int64{
 	return _size
 }
 
-func parseFile2(path string, ch chan int) {
+func parseFile2(path string, ch chan int, fileParam string) {
 	files, _ := ioutil.ReadDir(path)
 	FileSlice := []string{}
 	DirSlice := []string{}
@@ -36,7 +37,13 @@ func parseFile2(path string, ch chan int) {
 	var pathSize int64 =  0
 	count = 0
 	for _, value := range FileSlice {
-		pathSize += calcFileSize(value)
+		var fileSize int64
+		fileSize = calcFileSize(value)
+		if strings.ToLower(fileParam) == "y" &&
+			int(fileSize/1024/1024/1024) > MIN_SIZE {
+			fmt.Fprintf(os.Stdout,"FILE %s  %dG\n", value, fileSize/1024/1024/1024)
+		}
+		pathSize += fileSize
 		count++
 	}
 
@@ -51,7 +58,7 @@ func parseFile2(path string, ch chan int) {
 		i := 0
 		for _, value := range DirSlice {
 			DirCH[i] = make(chan int)
-			go parseFile2(value, DirCH[i])
+			go parseFile2(value, DirCH[i], fileParam)
 			i++
 		}
 
@@ -64,10 +71,10 @@ func parseFile2(path string, ch chan int) {
 }
 
 
-func getFileList(path string, size int) {
+func getFileList(path string, size int, fileParam string) {
 	ch := make(chan int)
 	MIN_SIZE = size
-	go parseFile2(path, ch)
+	go parseFile2(path, ch, fileParam)
 	<-ch
 	// fmt.Println("chan<-", <-ch)
 	fmt.Println("----------------")
